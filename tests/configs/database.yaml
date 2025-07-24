@@ -1,0 +1,12 @@
+# Database specific configuration
+database:
+  name: 'production_db'
+  user: 'prod_user'
+  password: 'secure_password'
+  ssl: true
+  pool_size: 20
+
+cache:
+  redis:
+    host: 'redis.production.com'
+    port: 6379

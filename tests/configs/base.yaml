@@ -1,0 +1,14 @@
+# Base configuration
+app:
+  name: 'BaseApp'
+  version: '0.1.0'
+  debug: false
+
+database:
+  host: 'localhost'
+  port: 5432
+  ssl: true
+
+logging:
+  level: 'WARNING'
+  format: '%(message)s'

@@ -1,0 +1,60 @@
+# Test configuration file using extends
+extends:
+  - 'configs/base.yaml'
+  - 'configs/database.yaml'
+  - 'configs/api.yaml'
+
+# Override and add specific configuration
+app:
+  name: 'MyApp'
+  version: '1.0.0'
+  debug: true
+  port: 8080
+
+database:
+  name: 'mydb'
+  user: 'admin'
+  password: 'secret123'
+  ssl: false
+
+api:
+  base_url: 'https://api.example.com'
+  timeout: 30
+  retries: 3
+  endpoints:
+    users: '/users'
+    posts: '/posts'
+    comments: '/comments'
+
+features:
+  - 'feature_a'
+  - 'feature_b'
+  - 'feature_c'
+
+nested:
+  level1:
+    level2:
+      level3:
+        value: 'deep_value'
+        number: 42
+      items:
+        - name: 'item1'
+          value: 100
+        - name: 'item2'
+          value: 200
+
+cache:
+  redis:
+    host: 'redis.example.com'
+    port: 6379
+    db: 0
+  memory:
+    max_size: 1000
+
+logging:
+  level: 'INFO'
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  handlers:
+    - type: 'console'
+    - type: 'file'
+      filename: 'app.log'

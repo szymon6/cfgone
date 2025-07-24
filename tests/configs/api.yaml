@@ -1,0 +1,10 @@
+# API configuration
+api:
+  base_url: 'https://api.production.com'
+  timeout: 60
+  retries: 5
+  rate_limit: 1000
+
+features:
+  - 'api_v2'
+  - 'advanced_auth'

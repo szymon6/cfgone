@@ -1,0 +1,9 @@
+[project]
+name = "cfgone"
+version = "0.1.0"
+description = "Load you config with one line of code"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "pyyaml>=3.10",
+]

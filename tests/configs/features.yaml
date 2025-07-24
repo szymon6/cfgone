@@ -1,0 +1,9 @@
+# Feature flags
+features:
+  - 'feature_x'
+  - 'feature_y'
+  - 'feature_z'
+
+experiments:
+  enabled: true
+  duration: 30
