@@ -4,6 +4,16 @@ from collections import OrderedDict
 from pathlib import Path
 
 
+DEFAULT_CONFIG_FILENAME = "config.yaml"
+PROJECT_ROOT_MARKERS = (
+    "pyproject.toml",
+    ".gitignore",
+    ".git",
+    "setup.cfg",
+    "setup.py",
+)
+
+
 class ConfigError(Exception):
     """Custom exception for configuration-related errors"""
     pass
@@ -126,6 +136,58 @@ def _deep_merge(base_dict, override_dict):
     return result
 
 
+def _find_project_root(start_dir, markers=PROJECT_ROOT_MARKERS):
+    """
+    Locate the nearest ancestor directory that looks like a project root.
+
+    Args:
+        start_dir: Directory to start searching from
+        markers: Filenames or directory names that identify a project root
+
+    Returns:
+        Path to the project root directory or None if not found
+    """
+    current_path = Path(start_dir).resolve()
+    for directory in (current_path, *current_path.parents):
+        if any((directory / marker).exists() for marker in markers):
+            return directory
+    return None
+
+
+def _discover_config_path(config_filename=DEFAULT_CONFIG_FILENAME, start_dir=None):
+    """
+    Find the most appropriate location of the configuration file.
+
+    Args:
+        config_filename: Name of the configuration file to search for
+        start_dir: Optional directory to start searching from (defaults to CWD)
+
+    Returns:
+        Path to the discovered configuration file
+    """
+    start_path = Path(start_dir).resolve() if start_dir else Path.cwd().resolve()
+
+    # Prefer an explicit config in the current working directory
+    candidate = start_path / config_filename
+    if candidate.is_file():
+        return candidate
+
+    # Fall back to the detected project root (if any)
+    project_root = _find_project_root(start_path)
+    if project_root:
+        root_candidate = project_root / config_filename
+        if root_candidate.is_file():
+            return root_candidate
+
+    # As a last resort, search parent directories for a matching config
+    for parent in start_path.parents:
+        parent_candidate = parent / config_filename
+        if parent_candidate.is_file():
+            return parent_candidate
+
+    raise ConfigError(f"Config file '{config_filename}' not found starting from {start_path}")
+
+
 def _resolve_config_path(config_path, base_dir):
     """
     Resolve a config path relative to base_dir.
@@ -209,10 +271,10 @@ def _load_config_file(config_path, visited_files=None, base_dir=None):
 
 
 def load_config():
-    config_path = os.path.join(os.getcwd(), "config.yaml")
-
     try:
-        config_dict = _load_config_file(config_path)
+        config_path = _discover_config_path(DEFAULT_CONFIG_FILENAME)
+        config_dict = _load_config_file(str(config_path))
+
         return DictToObj(config_dict)
     except ConfigError:
         raise

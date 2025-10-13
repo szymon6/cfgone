@@ -5,7 +5,8 @@ Comprehensive edge case tests for cfgone printing functionality.
 import unittest
 import tempfile
 import os
-from cfgone.core import DictToObj, ConfigError
+from pathlib import Path
+from cfgone.core import DictToObj, ConfigError, _discover_config_path, load_config
 
 
 class TestDictToObjEdgeCases(unittest.TestCase):
@@ -326,6 +327,31 @@ key: value
             _load_config_file('invalid_path_type.yaml')
 
         self.assertIn("All paths in 'extends' must be strings", str(cm.exception))
+
+
+class TestConfigDiscovery(unittest.TestCase):
+    """Test locating configuration files relative to project markers"""
+
+    def test_finds_config_in_project_root(self):
+        """Config should be discovered in project root when cwd lacks it"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            (root / "pyproject.toml").write_text("", encoding="utf-8")
+            (root / "config.yaml").write_text("app:\n  name: root-app\n", encoding="utf-8")
+
+            nested = root / "pkg" / "module"
+            nested.mkdir(parents=True)
+
+            discovered = _discover_config_path(start_dir=nested)
+            self.assertEqual(discovered, root / "config.yaml")
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(nested)
+                config = load_config()
+                self.assertEqual(config.app.name, "root-app")
+            finally:
+                os.chdir(original_cwd)
 
 
 if __name__ == "__main__":
