@@ -4,7 +4,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-DEFAULT_CONFIG_FILENAME = "config.yaml"
+DEFAULT_CONFIG_FILENAMES = ("cfg.yaml", "config.yaml")
 PROJECT_ROOT_MARKERS = (
     "pyproject.toml",
     ".gitignore",
@@ -154,38 +154,46 @@ def _find_project_root(start_dir, markers=PROJECT_ROOT_MARKERS):
     return None
 
 
-def _discover_config_path(config_filename=DEFAULT_CONFIG_FILENAME, start_dir=None):
+def _discover_config_path(config_filenames=None, start_dir=None):
     """
     Find the most appropriate location of the configuration file.
 
     Args:
-        config_filename: Name of the configuration file to search for
+        config_filenames: Tuple/list of configuration filenames to search for (defaults to DEFAULT_CONFIG_FILENAMES)
         start_dir: Optional directory to start searching from (defaults to CWD)
 
     Returns:
         Path to the discovered configuration file
     """
+    if config_filenames is None:
+        config_filenames = DEFAULT_CONFIG_FILENAMES
+    elif isinstance(config_filenames, str):
+        config_filenames = (config_filenames,)
+
     start_path = Path(start_dir).resolve() if start_dir else Path.cwd().resolve()
 
     # Prefer an explicit config in the current working directory
-    candidate = start_path / config_filename
-    if candidate.is_file():
-        return candidate
+    for config_filename in config_filenames:
+        candidate = start_path / config_filename
+        if candidate.is_file():
+            return candidate
 
     # Fall back to the detected project root (if any)
     project_root = _find_project_root(start_path)
     if project_root:
-        root_candidate = project_root / config_filename
-        if root_candidate.is_file():
-            return root_candidate
+        for config_filename in config_filenames:
+            root_candidate = project_root / config_filename
+            if root_candidate.is_file():
+                return root_candidate
 
     # As a last resort, search parent directories for a matching config
     for parent in start_path.parents:
-        parent_candidate = parent / config_filename
-        if parent_candidate.is_file():
-            return parent_candidate
+        for config_filename in config_filenames:
+            parent_candidate = parent / config_filename
+            if parent_candidate.is_file():
+                return parent_candidate
 
-    raise ConfigError(f"Config file '{config_filename}' not found starting from {start_path}")
+    raise ConfigError(f"Config file {config_filenames} not found starting from {start_path}")
 
 
 def _resolve_config_path(config_path, base_dir):
@@ -272,7 +280,7 @@ def _load_config_file(config_path, visited_files=None, base_dir=None):
 
 def load_config():
     try:
-        config_path = _discover_config_path(DEFAULT_CONFIG_FILENAME)
+        config_path = _discover_config_path()
         config_dict = _load_config_file(str(config_path))
 
         return DictToObj(config_dict)

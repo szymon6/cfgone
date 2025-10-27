@@ -353,6 +353,61 @@ class TestConfigDiscovery(unittest.TestCase):
             finally:
                 os.chdir(original_cwd)
 
+    def test_accepts_cfg_yaml_filename(self):
+        """cfg.yaml should be accepted as a valid config filename"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            (root / "pyproject.toml").write_text("", encoding="utf-8")
+            (root / "cfg.yaml").write_text("app:\n  name: cfg-app\n", encoding="utf-8")
+
+            discovered = _discover_config_path(start_dir=root)
+            self.assertEqual(discovered, root / "cfg.yaml")
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(root)
+                config = load_config()
+                self.assertEqual(config.app.name, "cfg-app")
+            finally:
+                os.chdir(original_cwd)
+
+    def test_cfg_yaml_takes_precedence_over_config_yaml(self):
+        """cfg.yaml should be preferred when both cfg.yaml and config.yaml exist"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            (root / "pyproject.toml").write_text("", encoding="utf-8")
+            (root / "cfg.yaml").write_text("app:\n  name: cfg-preferred\n", encoding="utf-8")
+            (root / "config.yaml").write_text("app:\n  name: config-fallback\n", encoding="utf-8")
+
+            discovered = _discover_config_path(start_dir=root)
+            self.assertEqual(discovered, root / "cfg.yaml")
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(root)
+                config = load_config()
+                self.assertEqual(config.app.name, "cfg-preferred")
+            finally:
+                os.chdir(original_cwd)
+
+    def test_config_yaml_used_when_cfg_yaml_not_present(self):
+        """config.yaml should still work when cfg.yaml is not present"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir).resolve()
+            (root / "pyproject.toml").write_text("", encoding="utf-8")
+            (root / "config.yaml").write_text("app:\n  name: config-only\n", encoding="utf-8")
+
+            discovered = _discover_config_path(start_dir=root)
+            self.assertEqual(discovered, root / "config.yaml")
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(root)
+                config = load_config()
+                self.assertEqual(config.app.name, "config-only")
+            finally:
+                os.chdir(original_cwd)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
